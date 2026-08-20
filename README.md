@@ -9,8 +9,10 @@ Um aplicativo mobile desenvolvido para facilitar a organização das suas partid
 Siga os passos abaixo para rodar o projeto localmente:
 
 ### 1. Instalar as dependências
-```bash
+
+````bash
 npm install
 
 ## 2. Iniciar o servidor de desenvolvimento
 ```npx expo start
+````
