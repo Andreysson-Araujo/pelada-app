@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 
@@ -39,13 +39,19 @@ type Time = {
 
 export default function Home() {
   // ===================================================
+  // REFERÊNCIA DA TELA
+  // ===================================================
+
+  const scrollViewRef = useRef<ScrollView>(null);
+
+  // ===================================================
   // QUANTIDADE DE JOGADORES POR TIME
   // ===================================================
 
   const [jogadoresPorTime, setJogadoresPorTime] = useState(5);
 
   // ===================================================
-  // JOGADORES DIGITADOS MANUALMENTE
+  // JOGADORES ADICIONAIS
   // ===================================================
 
   const [goleiros, setGoleiros] = useState("");
@@ -103,7 +109,7 @@ export default function Home() {
   }
 
   // ===================================================
-  // SELECIONAR / DESELECIONAR
+  // SELECIONAR / DESELECIONAR JOGADOR
   // ===================================================
 
   function selecionarJogador(id: string) {
@@ -153,7 +159,7 @@ export default function Home() {
 
     // -----------------------------------------------
     // JOGADORES ADICIONAIS
-    // SEM CADASTRO = 1 ESTRELA
+    // RECEBEM 1 ESTRELA
     // -----------------------------------------------
 
     const jogadoresAdicionais = jogadores
@@ -167,7 +173,7 @@ export default function Home() {
 
     // -----------------------------------------------
     // GOLEIROS ADICIONAIS
-    // SEM CADASTRO = 1 ESTRELA
+    // RECEBEM 1 ESTRELA
     // -----------------------------------------------
 
     const goleirosAdicionais = goleiros
@@ -188,7 +194,7 @@ export default function Home() {
     const todosGoleiros = [...goleirosBase, ...goleirosAdicionais];
 
     // -----------------------------------------------
-    // VERIFICAR SE EXISTEM JOGADORES
+    // VERIFICAR JOGADORES
     // -----------------------------------------------
 
     if (todosJogadores.length === 0) {
@@ -198,7 +204,7 @@ export default function Home() {
     }
 
     // -----------------------------------------------
-    // SORTEAR
+    // SORTEAR TIMES
     // -----------------------------------------------
 
     const resultado = sortearTimes(
@@ -208,12 +214,22 @@ export default function Home() {
     );
 
     // -----------------------------------------------
-    // MOSTRAR
+    // MOSTRAR RESULTADO
     // -----------------------------------------------
 
     setTimes(resultado);
 
     console.log("TIMES:", resultado);
+
+    // -----------------------------------------------
+    // ROLAR AUTOMATICAMENTE PARA O RESULTADO
+    // -----------------------------------------------
+
+    setTimeout(() => {
+      scrollViewRef.current?.scrollToEnd({
+        animated: true,
+      });
+    }, 100);
   }
 
   // ===================================================
@@ -222,6 +238,7 @@ export default function Home() {
 
   return (
     <ScrollView
+      ref={scrollViewRef}
       contentContainerStyle={styles.container}
       keyboardShouldPersistTaps="handled"
     >
@@ -259,12 +276,14 @@ export default function Home() {
       </Pressable>
 
       {/* ============================================= */}
-      {/* QUANTIDADE */}
+      {/* QUANTIDADE DE JOGADORES */}
       {/* ============================================= */}
 
-      <Text style={styles.subtitulo}>Jogadores por time</Text>
+      <Text style={styles.titulo}>Jogadores por time (sem goleiro)</Text>
 
       <View style={styles.contador}>
+        {/* DIMINUIR */}
+
         <Pressable
           style={styles.botaoContador}
           onPress={() => {
@@ -276,7 +295,11 @@ export default function Home() {
           <Text style={styles.textoContador}>−</Text>
         </Pressable>
 
+        {/* NÚMERO */}
+
         <Text style={styles.numeroJogadores}>{jogadoresPorTime}</Text>
+
+        {/* AUMENTAR */}
 
         <Pressable
           style={styles.botaoContador}
@@ -321,7 +344,7 @@ export default function Home() {
       />
 
       {/* ============================================= */}
-      {/* BOTÃO SORTEAR */}
+      {/* BOTÃO SEPARAR */}
       {/* ============================================= */}
 
       <Pressable style={styles.botao} onPress={separarTimes}>
@@ -336,11 +359,19 @@ export default function Home() {
         <View style={styles.resultado}>
           <Text style={styles.tituloResultado}>TIMES</Text>
 
+          {/* ========================================= */}
+          {/* TIMES */}
+          {/* ========================================= */}
+
           {times.map((time, index) => (
             <View key={index} style={styles.cardTime}>
+              {/* NOME DO TIME */}
+
               <Text style={styles.nomeTime}>TIME {index + 1}</Text>
 
+              {/* ================================= */}
               {/* GOLEIRO */}
+              {/* ================================= */}
 
               {time.goleiro && (
                 <Text style={styles.jogador}>
@@ -350,7 +381,9 @@ export default function Home() {
                 </Text>
               )}
 
+              {/* ================================= */}
               {/* JOGADORES */}
+              {/* ================================= */}
 
               {time.jogadores.map((jogador, jogadorIndex) => (
                 <Text key={jogadorIndex} style={styles.jogador}>
@@ -365,7 +398,7 @@ export default function Home() {
       )}
 
       {/* ============================================= */}
-      {/* MODAL */}
+      {/* MODAL DE JOGADORES */}
       {/* ============================================= */}
 
       <ModalJogadores
