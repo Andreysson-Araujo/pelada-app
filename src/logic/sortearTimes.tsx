@@ -1,40 +1,133 @@
+type Jogador = {
+  nome: string;
+  estrelas: number;
+};
+
+type Time = {
+  goleiro: Jogador | null;
+  jogadores: Jogador[];
+};
+
+// =====================================================
+// EMBARALHAR
+// =====================================================
+
+function embaralhar<T>(lista: T[]): T[] {
+  return [...lista].sort(() => Math.random() - 0.5);
+}
+
+// =====================================================
+// SORTEAR TIMES
+// =====================================================
+
 export function sortearTimes(
-  jogadores: string[],
-  goleiros: string[],
+  jogadores: Jogador[],
+
+  goleiros: Jogador[],
+
   jogadoresPorTime: number,
-) {
-  // Copia a lista para não alterar a lista original
-  const jogadoresEmbaralhados = [...jogadores];
+): Time[] {
+  // ===================================================
+  // QUANTIDADE DE TIMES
+  // ===================================================
 
-  // Embaralha os jogadores
-  jogadoresEmbaralhados.sort(() => Math.random() - 0.5);
+  const quantidadeTimes = Math.ceil(jogadores.length / jogadoresPorTime);
 
-  // Descobre quantos times serão necessários
-  const quantidadeTimes = Math.ceil(
-    jogadoresEmbaralhados.length / jogadoresPorTime,
+  // ===================================================
+  // CRIAR TIMES
+  // ===================================================
+
+  const times: Time[] = Array.from(
+    {
+      length: quantidadeTimes,
+    },
+
+    () => ({
+      goleiro: null,
+      jogadores: [],
+    }),
   );
 
-  // Cria os times
-  const times: {
-    goleiros: string;
-    jogadores: string[];
-  }[] = [];
+  // ===================================================
+  // EMBARALHAR JOGADORES
+  // ===================================================
 
-  for (let i = 0; i < quantidadeTimes; i++) {
-    const goleiro =
-      goleiros.length > 0 ? goleiros[i % goleiros.length] : "Sem Goleiros";
-    times.push({
-      goleiros: goleiro,
-      jogadores: [],
+  const jogadoresEmbaralhados = embaralhar(jogadores);
+
+  // ===================================================
+  // ORDENAR POR ESTRELAS
+  //
+  // Os melhores jogadores são
+  // distribuídos primeiro.
+  // ===================================================
+
+  jogadoresEmbaralhados.sort((a, b) => b.estrelas - a.estrelas);
+
+  // ===================================================
+  // DISTRIBUIR JOGADORES
+  // ===================================================
+
+  jogadoresEmbaralhados.forEach((jogador) => {
+    let melhorTime = -1;
+
+    let menorForca = Infinity;
+
+    times.forEach((time, index) => {
+      // Quantidade atual
+      const quantidade = time.jogadores.length;
+
+      // Força atual
+      const forca = time.jogadores.reduce(
+        (total, jogadorAtual) => {
+          return total + jogadorAtual.estrelas;
+        },
+
+        0,
+      );
+
+      // -----------------------------------------
+      // Só pode receber se ainda tiver espaço
+      // -----------------------------------------
+
+      if (quantidade >= jogadoresPorTime) {
+        return;
+      }
+
+      // -----------------------------------------
+      // Procurar o time mais fraco
+      // -----------------------------------------
+
+      if (forca < menorForca) {
+        menorForca = forca;
+
+        melhorTime = index;
+      }
     });
-  }
 
-  // Distribui os jogadores de Linha
-  jogadoresEmbaralhados.forEach((jogador, index) => {
-    const numeroDoTime = index % quantidadeTimes;
+    // ---------------------------------------------
+    // Adicionar jogador
+    // ---------------------------------------------
 
-    times[numeroDoTime].jogadores.push(jogador);
+    if (melhorTime !== -1) {
+      times[melhorTime].jogadores.push(jogador);
+    }
   });
+
+  // ===================================================
+  // DISTRIBUIR GOLEIROS
+  // ===================================================
+
+  const goleirosEmbaralhados = embaralhar(goleiros);
+
+  goleirosEmbaralhados.forEach((goleiro, index) => {
+    const timeIndex = index % times.length;
+
+    times[timeIndex].goleiro = goleiro;
+  });
+
+  // ===================================================
+  // RETORNAR
+  // ===================================================
 
   return times;
 }

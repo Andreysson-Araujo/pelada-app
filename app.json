@@ -23,7 +23,7 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
+          "backgroundColor": "#000000",
           "image": "./assets/images/zumbi.png",
           "imageWidth": 76
         }

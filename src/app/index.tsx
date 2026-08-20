@@ -1,94 +1,268 @@
-import * as Clipboard from "expo-clipboard";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-import {
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
+
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
+import { router } from "expo-router";
 
 import { sortearTimes } from "../logic/sortearTimes";
 
+import { styles } from "../styles/homeStyles";
+
+import ModalJogadores from "../components/ModalJogadores";
+
+// =====================================================
+// TIPOS
+// =====================================================
+
+type Jogador = {
+  id: string;
+  nome: string;
+  estrelas: number;
+  goleiro: boolean;
+};
+
+type JogadorTime = {
+  nome: string;
+  estrelas: number;
+};
+
+type Time = {
+  goleiro: JogadorTime | null;
+  jogadores: JogadorTime[];
+};
+
+// =====================================================
+// HOME
+// =====================================================
+
 export default function Home() {
-  // Quantidade de jogadores por time
+  // ===================================================
+  // QUANTIDADE DE JOGADORES POR TIME
+  // ===================================================
+
   const [jogadoresPorTime, setJogadoresPorTime] = useState(5);
 
-  // Texto digitado nos campos
+  // ===================================================
+  // JOGADORES DIGITADOS MANUALMENTE
+  // ===================================================
+
   const [goleiros, setGoleiros] = useState("");
+
   const [jogadores, setJogadores] = useState("");
 
-  // Times gerados pelo algoritmo
-  const [times, setTimes] = useState<
-    { goleiros: string; jogadores: string[] }[]
-  >([]);
+  // ===================================================
+  // JOGADORES CADASTRADOS
+  // ===================================================
+
+  const [jogadoresCadastrados, setJogadoresCadastrados] = useState<Jogador[]>(
+    [],
+  );
+
+  // ===================================================
+  // JOGADORES SELECIONADOS
+  // ===================================================
+
+  const [jogadoresSelecionados, setJogadoresSelecionados] = useState<string[]>(
+    [],
+  );
+
+  // ===================================================
+  // MODAL
+  // ===================================================
+
+  const [modalJogadores, setModalJogadores] = useState(false);
+
+  // ===================================================
+  // TIMES
+  // ===================================================
+
+  const [times, setTimes] = useState<Time[]>([]);
+
+  // ===================================================
+  // CARREGAR JOGADORES
+  // ===================================================
+
+  useEffect(() => {
+    carregarJogadores();
+  }, []);
+
+  async function carregarJogadores() {
+    try {
+      const dados = await AsyncStorage.getItem("jogadores");
+
+      if (dados) {
+        const lista: Jogador[] = JSON.parse(dados);
+
+        setJogadoresCadastrados(lista);
+      }
+    } catch (error) {
+      console.log("Erro ao carregar jogadores:", error);
+    }
+  }
+
+  // ===================================================
+  // SELECIONAR / DESELECIONAR
+  // ===================================================
+
+  function selecionarJogador(id: string) {
+    if (jogadoresSelecionados.includes(id)) {
+      setJogadoresSelecionados(
+        jogadoresSelecionados.filter((jogadorId) => jogadorId !== id),
+      );
+    } else {
+      setJogadoresSelecionados([...jogadoresSelecionados, id]);
+    }
+  }
+
+  // ===================================================
+  // SEPARAR TIMES
+  // ===================================================
 
   function separarTimes() {
-    const listaGoleiros = goleiros
+    // -----------------------------------------------
+    // JOGADORES CADASTRADOS SELECIONADOS
+    // -----------------------------------------------
+
+    const selecionados = jogadoresCadastrados.filter((jogador) =>
+      jogadoresSelecionados.includes(jogador.id),
+    );
+
+    // -----------------------------------------------
+    // JOGADORES DE LINHA CADASTRADOS
+    // -----------------------------------------------
+
+    const jogadoresBase = selecionados
+      .filter((jogador) => !jogador.goleiro)
+      .map((jogador) => ({
+        nome: jogador.nome,
+        estrelas: jogador.estrelas,
+      }));
+
+    // -----------------------------------------------
+    // GOLEIROS CADASTRADOS
+    // -----------------------------------------------
+
+    const goleirosBase = selecionados
+      .filter((jogador) => jogador.goleiro)
+      .map((jogador) => ({
+        nome: jogador.nome,
+        estrelas: jogador.estrelas,
+      }));
+
+    // -----------------------------------------------
+    // JOGADORES ADICIONAIS
+    // SEM CADASTRO = 1 ESTRELA
+    // -----------------------------------------------
+
+    const jogadoresAdicionais = jogadores
       .split("\n")
       .map((nome) => nome.trim())
-      .filter((nome) => nome !== "");
+      .filter((nome) => nome !== "")
+      .map((nome) => ({
+        nome,
+        estrelas: 1,
+      }));
 
-    const listaJogadores = jogadores
+    // -----------------------------------------------
+    // GOLEIROS ADICIONAIS
+    // SEM CADASTRO = 1 ESTRELA
+    // -----------------------------------------------
+
+    const goleirosAdicionais = goleiros
       .split("\n")
       .map((nome) => nome.trim())
-      .filter((nome) => nome !== "");
+      .filter((nome) => nome !== "")
+      .map((nome) => ({
+        nome,
+        estrelas: 1,
+      }));
 
-    if (listaJogadores.length === 0) {
-      console.log("Nenhum jogador foi informado.");
+    // -----------------------------------------------
+    // JUNTAR JOGADORES
+    // -----------------------------------------------
+
+    const todosJogadores = [...jogadoresBase, ...jogadoresAdicionais];
+
+    const todosGoleiros = [...goleirosBase, ...goleirosAdicionais];
+
+    // -----------------------------------------------
+    // VERIFICAR SE EXISTEM JOGADORES
+    // -----------------------------------------------
+
+    if (todosJogadores.length === 0) {
+      console.log("Nenhum jogador informado.");
+
       return;
     }
 
+    // -----------------------------------------------
+    // SORTEAR
+    // -----------------------------------------------
+
     const resultado = sortearTimes(
-      listaJogadores,
-      listaGoleiros,
+      todosJogadores,
+      todosGoleiros,
       jogadoresPorTime,
     );
+
+    // -----------------------------------------------
+    // MOSTRAR
+    // -----------------------------------------------
 
     setTimes(resultado);
 
     console.log("TIMES:", resultado);
   }
 
-  async function copiarTimes() {
-    if (times.length === 0) {
-      console.log("Nenhum time foi gerado.");
-      return;
-    }
-
-    let texto = "⚽ PELADA\n\n";
-
-    times.forEach((time, index) => {
-      texto += `TIME ${index + 1}\n`;
-
-      texto += `🧤 ${time.goleiros}\n`;
-
-      time.jogadores.forEach((jogador) => {
-        texto += `⚽ ${jogador}\n`;
-      });
-
-      texto += "\n";
-    });
-
-    await Clipboard.setStringAsync(texto);
-
-    console.log("Times copiados!");
-  }
+  // ===================================================
+  // TELA
+  // ===================================================
 
   return (
     <ScrollView
       contentContainerStyle={styles.container}
       keyboardShouldPersistTaps="handled"
     >
+      {/* ============================================= */}
       {/* TÍTULO */}
+      {/* ============================================= */}
 
-      <Text style={styles.titulo}>⚽ PELADA DOS MORTOS 🧟</Text>
+      <Text style={styles.titulo}>⚽ PELADA DOS MORTOS</Text>
 
-      {/* JOGADORES POR TIME */}
+      {/* ============================================= */}
+      {/* SELECIONAR JOGADORES */}
+      {/* ============================================= */}
 
-      <Text style={styles.titulo}>Jogadores por time</Text>
+      <Pressable
+        style={styles.botaoJogadores}
+        onPress={() => setModalJogadores(true)}
+      >
+        <Text style={styles.textoBotaoJogadores}>👥 SELECIONAR JOGADORES</Text>
+
+        <Text style={styles.quantidadeSelecionados}>
+          {jogadoresSelecionados.length} selecionado
+          {jogadoresSelecionados.length !== 1 ? "s" : ""}
+        </Text>
+      </Pressable>
+
+      {/* ============================================= */}
+      {/* GERENCIAR JOGADORES */}
+      {/* ============================================= */}
+
+      <Pressable
+        style={styles.botaoGerenciar}
+        onPress={() => router.push("/jogadores")}
+      >
+        <Text style={styles.textoGerenciar}>⚙️ GERENCIAR JOGADORES</Text>
+      </Pressable>
+
+      {/* ============================================= */}
+      {/* QUANTIDADE */}
+      {/* ============================================= */}
+
+      <Text style={styles.subtitulo}>Jogadores por time</Text>
 
       <View style={styles.contador}>
         <Pressable
@@ -116,9 +290,11 @@ export default function Home() {
         </Pressable>
       </View>
 
-      {/* GOLEIROS */}
+      {/* ============================================= */}
+      {/* GOLEIROS ADICIONAIS */}
+      {/* ============================================= */}
 
-      <Text style={styles.subtitulo}>Goleiros</Text>
+      <Text style={styles.subtitulo}>Goleiros adicionais</Text>
 
       <TextInput
         style={styles.input}
@@ -129,9 +305,11 @@ export default function Home() {
         onChangeText={setGoleiros}
       />
 
-      {/* JOGADORES DE LINHA */}
+      {/* ============================================= */}
+      {/* JOGADORES ADICIONAIS */}
+      {/* ============================================= */}
 
-      <Text style={styles.subtitulo}>Jogadores de linha</Text>
+      <Text style={styles.subtitulo}>Jogadores adicionais</Text>
 
       <TextInput
         style={styles.inputGrande}
@@ -142,13 +320,17 @@ export default function Home() {
         onChangeText={setJogadores}
       />
 
-      {/* BOTÃO SEPARAR */}
+      {/* ============================================= */}
+      {/* BOTÃO SORTEAR */}
+      {/* ============================================= */}
 
       <Pressable style={styles.botao} onPress={separarTimes}>
         <Text style={styles.textoBotao}>⚽ SEPARAR TIMES</Text>
       </Pressable>
 
-      {/* RESULTADO DOS TIMES */}
+      {/* ============================================= */}
+      {/* RESULTADO */}
+      {/* ============================================= */}
 
       {times.length > 0 && (
         <View style={styles.resultado}>
@@ -157,140 +339,42 @@ export default function Home() {
           {times.map((time, index) => (
             <View key={index} style={styles.cardTime}>
               <Text style={styles.nomeTime}>TIME {index + 1}</Text>
-              <Text style={styles.jogador}>🥅 Goleiro: {time.goleiros}</Text>
+
+              {/* GOLEIRO */}
+
+              {time.goleiro && (
+                <Text style={styles.jogador}>
+                  🧤 {time.goleiro.nome}
+                  {"  "}
+                  {"⭐".repeat(time.goleiro.estrelas)}
+                </Text>
+              )}
+
+              {/* JOGADORES */}
 
               {time.jogadores.map((jogador, jogadorIndex) => (
                 <Text key={jogadorIndex} style={styles.jogador}>
-                  ⚽ {jogador}
+                  ⚽ {jogador.nome}
+                  {"  "}
+                  {"⭐".repeat(jogador.estrelas)}
                 </Text>
               ))}
             </View>
           ))}
-
-          <Pressable style={styles.botao} onPress={copiarTimes}>
-            <Text style={styles.textoBotao}>📋 COPIAR TIMES</Text>
-          </Pressable>
         </View>
       )}
+
+      {/* ============================================= */}
+      {/* MODAL */}
+      {/* ============================================= */}
+
+      <ModalJogadores
+        visivel={modalJogadores}
+        jogadores={jogadoresCadastrados}
+        selecionados={jogadoresSelecionados}
+        onSelecionar={selecionarJogador}
+        onFechar={() => setModalJogadores(false)}
+      />
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
-    backgroundColor: "#0B3D20",
-    padding: 20,
-    paddingTop: 60,
-    paddingBottom: 40,
-  },
-
-  titulo: {
-    fontSize: 40,
-    fontWeight: "bold",
-    color: "#FFFFFF",
-    textAlign: "center",
-    marginBottom: 40,
-  },
-
-  subtitulo: {
-    alignItems: "center",
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#FFFFFF",
-    marginBottom: 8,
-  },
-
-  contador: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 30,
-  },
-
-  botaoContador: {
-    backgroundColor: "#FFFFFF",
-    width: 50,
-    height: 50,
-    borderRadius: 10,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  textoContador: {
-    color: "#0B3D20",
-    fontSize: 30,
-    fontWeight: "bold",
-  },
-
-  numeroJogadores: {
-    color: "#FFFFFF",
-    fontSize: 28,
-    fontWeight: "bold",
-    marginHorizontal: 25,
-  },
-
-  input: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 10,
-    padding: 15,
-    fontSize: 18,
-    marginBottom: 25,
-    minHeight: 60,
-  },
-
-  inputGrande: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 10,
-    padding: 15,
-    fontSize: 18,
-    height: 150,
-    textAlignVertical: "top",
-  },
-
-  botao: {
-    backgroundColor: "#FFFFFF",
-    padding: 16,
-    borderRadius: 10,
-    marginTop: 30,
-    alignItems: "center",
-  },
-
-  textoBotao: {
-    color: "#0B3D20",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-
-  resultado: {
-    marginTop: 40,
-  },
-
-  tituloResultado: {
-    color: "#FFFFFF",
-    fontSize: 28,
-    fontWeight: "bold",
-    textAlign: "center",
-    marginBottom: 20,
-  },
-
-  cardTime: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 20,
-  },
-
-  nomeTime: {
-    color: "#0B3D20",
-    fontSize: 24,
-    fontWeight: "bold",
-    marginBottom: 15,
-  },
-
-  jogador: {
-    color: "#222222",
-    fontSize: 18,
-    marginBottom: 8,
-  },
-});
