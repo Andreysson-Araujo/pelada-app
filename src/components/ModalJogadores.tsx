@@ -1,12 +1,12 @@
 import { useState } from "react";
 
 import {
-    Modal,
-    Pressable,
-    ScrollView,
-    Text,
-    TextInput,
-    View,
+  Modal,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
 
 type Jogador = {
@@ -31,11 +31,60 @@ export default function ModalJogadores({
   onSelecionar,
   onFechar,
 }: Props) {
+  // =====================================================
+  // ESTADOS
+  // =====================================================
+
   const [busca, setBusca] = useState("");
 
-  const jogadoresFiltrados = jogadores.filter((jogador) =>
-    jogador.nome.toLowerCase().includes(busca.toLowerCase()),
-  );
+  // null = todos
+  // 1 = ⭐
+  // 2 = ⭐⭐
+  // 3 = ⭐⭐⭐
+  // 4 = ⭐⭐⭐⭐
+  // 5 = ⭐⭐⭐⭐⭐
+
+  const [filtroEstrelas, setFiltroEstrelas] = useState<number | null>(null);
+
+  // =====================================================
+  // FILTRAR JOGADORES
+  // =====================================================
+
+  const jogadoresFiltrados = jogadores.filter((jogador) => {
+    // ---------------------------------------------------
+    // BUSCA POR NOME
+    // ---------------------------------------------------
+
+    const correspondeBusca = jogador.nome
+      .toLowerCase()
+      .includes(busca.toLowerCase());
+
+    // ---------------------------------------------------
+    // FILTRO POR ESTRELAS
+    // ---------------------------------------------------
+
+    const correspondeEstrelas =
+      filtroEstrelas === null || jogador.estrelas === filtroEstrelas;
+
+    // ---------------------------------------------------
+    // OS DOIS FILTROS PRECISAM SER ATENDIDOS
+    // ---------------------------------------------------
+
+    return correspondeBusca && correspondeEstrelas;
+  });
+
+  // =====================================================
+  // LIMPAR FILTROS
+  // =====================================================
+
+  function limparFiltros() {
+    setBusca("");
+    setFiltroEstrelas(null);
+  }
+
+  // =====================================================
+  // RENDER
+  // =====================================================
 
   return (
     <Modal
@@ -46,7 +95,9 @@ export default function ModalJogadores({
     >
       <View style={styles.fundo}>
         <View style={styles.modal}>
+          {/* ================================================= */}
           {/* CABEÇALHO */}
+          {/* ================================================= */}
 
           <View style={styles.cabecalho}>
             <Text style={styles.titulo}>👥 JOGADORES</Text>
@@ -56,7 +107,9 @@ export default function ModalJogadores({
             </Pressable>
           </View>
 
+          {/* ================================================= */}
           {/* PESQUISA */}
+          {/* ================================================= */}
 
           <TextInput
             style={styles.input}
@@ -66,9 +119,82 @@ export default function ModalJogadores({
             onChangeText={setBusca}
           />
 
-          {/* LISTA */}
+          {/* ================================================= */}
+          {/* FILTRO DE ESTRELAS */}
+          {/* ================================================= */}
 
-          <ScrollView style={styles.lista}>
+          <Text style={styles.labelFiltro}>FILTRAR POR NÍVEL</Text>
+
+          <View style={styles.filtros}>
+            {/* ------------------------------------------------ */}
+            {/* TODOS */}
+            {/* ------------------------------------------------ */}
+
+            <Pressable
+              style={[
+                styles.filtro,
+                filtroEstrelas === null && styles.filtroAtivo,
+              ]}
+              onPress={() => setFiltroEstrelas(null)}
+            >
+              <Text
+                style={[
+                  styles.textoFiltro,
+                  filtroEstrelas === null && styles.textoFiltroAtivo,
+                ]}
+              >
+                TODOS
+              </Text>
+            </Pressable>
+
+            {/* ------------------------------------------------ */}
+            {/* FILTROS DE ESTRELAS */}
+            {/* ------------------------------------------------ */}
+
+            {[1, 2, 3, 4, 5].map((quantidade) => {
+              const ativo = filtroEstrelas === quantidade;
+
+              return (
+                <Pressable
+                  key={quantidade}
+                  style={[styles.filtro, ativo && styles.filtroAtivo]}
+                  onPress={() => setFiltroEstrelas(quantidade)}
+                >
+                  <Text
+                    style={[
+                      styles.textoFiltro,
+                      ativo && styles.textoFiltroAtivo,
+                    ]}
+                  >
+                    {"⭐".repeat(quantidade)}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          {/* ================================================= */}
+          {/* FILTROS ATIVOS */}
+          {/* ================================================= */}
+
+          {(busca.length > 0 || filtroEstrelas !== null) && (
+            <View style={styles.filtroSelecionado}>
+              <Text style={styles.filtroSelecionadoTexto}>
+                {jogadoresFiltrados.length} jogador
+                {jogadoresFiltrados.length !== 1 ? "es" : ""}
+              </Text>
+
+              <Pressable onPress={limparFiltros}>
+                <Text style={styles.limpar}>LIMPAR</Text>
+              </Pressable>
+            </View>
+          )}
+
+          {/* ================================================= */}
+          {/* LISTA DE JOGADORES */}
+          {/* ================================================= */}
+
+          <ScrollView style={styles.lista} showsVerticalScrollIndicator={false}>
             {jogadoresFiltrados.map((jogador) => {
               const selecionado = selecionados.includes(jogador.id);
 
@@ -77,16 +203,23 @@ export default function ModalJogadores({
                   key={jogador.id}
                   style={[
                     styles.jogador,
-
                     selecionado && styles.jogadorSelecionado,
                   ]}
                   onPress={() => onSelecionar(jogador.id)}
                 >
-                  <View>
+                  <View style={styles.informacoes}>
+                    {/* ------------------------------------------------ */}
+                    {/* NOME */}
+                    {/* ------------------------------------------------ */}
+
                     <Text style={styles.nome}>
                       {selecionado ? "☑" : "☐"} {jogador.goleiro ? "🧤" : "⚽"}{" "}
                       {jogador.nome}
                     </Text>
+
+                    {/* ------------------------------------------------ */}
+                    {/* ESTRELAS */}
+                    {/* ------------------------------------------------ */}
 
                     <Text style={styles.estrelas}>
                       {"⭐".repeat(jogador.estrelas)}
@@ -96,12 +229,26 @@ export default function ModalJogadores({
               );
             })}
 
+            {/* ================================================= */}
+            {/* NENHUM RESULTADO */}
+            {/* ================================================= */}
+
             {jogadoresFiltrados.length === 0 && (
-              <Text style={styles.nenhum}>Nenhum jogador encontrado.</Text>
+              <View style={styles.semResultado}>
+                <Text style={styles.iconeNenhum}>🔎</Text>
+
+                <Text style={styles.nenhum}>Nenhum jogador encontrado.</Text>
+
+                <Pressable style={styles.botaoLimpar} onPress={limparFiltros}>
+                  <Text style={styles.textoBotaoLimpar}>LIMPAR FILTROS</Text>
+                </Pressable>
+              </View>
             )}
           </ScrollView>
 
+          {/* ================================================= */}
           {/* RODAPÉ */}
+          {/* ================================================= */}
 
           <View style={styles.rodape}>
             <Text style={styles.contador}>
@@ -119,7 +266,15 @@ export default function ModalJogadores({
   );
 }
 
+// =====================================================
+// ESTILOS
+// =====================================================
+
 const styles = {
+  // ===================================================
+  // FUNDO
+  // ===================================================
+
   fundo: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.6)",
@@ -127,12 +282,20 @@ const styles = {
     padding: 20,
   },
 
+  // ===================================================
+  // MODAL
+  // ===================================================
+
   modal: {
     backgroundColor: "#0B3D20",
     borderRadius: 20,
     padding: 20,
     maxHeight: "85%" as const,
   },
+
+  // ===================================================
+  // CABEÇALHO
+  // ===================================================
 
   cabecalho: {
     flexDirection: "row" as const,
@@ -153,6 +316,10 @@ const styles = {
     fontWeight: "bold" as const,
   },
 
+  // ===================================================
+  // INPUT
+  // ===================================================
+
   input: {
     backgroundColor: "#FFFFFF",
     borderRadius: 10,
@@ -161,9 +328,103 @@ const styles = {
     marginBottom: 15,
   },
 
+  // ===================================================
+  // FILTRO
+  // ===================================================
+
+  labelFiltro: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "bold" as const,
+    marginBottom: 8,
+    opacity: 0.8,
+  },
+
+  // ===================================================
+  // CONTAINER DOS FILTROS
+  // ===================================================
+
+  filtros: {
+    flexDirection: "row" as const,
+    flexWrap: "wrap" as const,
+    gap: 8,
+    marginBottom: 12,
+  },
+
+  // ===================================================
+  // BOTÃO DO FILTRO
+  // ===================================================
+
+  filtro: {
+    backgroundColor: "#146B3A",
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderWidth: 1,
+    borderColor: "#2B8050",
+  },
+
+  // ===================================================
+  // FILTRO ATIVO
+  // ===================================================
+
+  filtroAtivo: {
+    backgroundColor: "#FFFFFF",
+    borderColor: "#FFFFFF",
+  },
+
+  // ===================================================
+  // TEXTO DO FILTRO
+  // ===================================================
+
+  textoFiltro: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "bold" as const,
+  },
+
+  textoFiltroAtivo: {
+    color: "#0B3D20",
+  },
+
+  // ===================================================
+  // FILTRO SELECIONADO
+  // ===================================================
+
+  filtroSelecionado: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "space-between" as const,
+    backgroundColor: "#092E18",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginBottom: 10,
+  },
+
+  filtroSelecionadoTexto: {
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontWeight: "bold" as const,
+  },
+
+  limpar: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "bold" as const,
+  },
+
+  // ===================================================
+  // LISTA
+  // ===================================================
+
   lista: {
     marginBottom: 15,
   },
+
+  // ===================================================
+  // JOGADOR
+  // ===================================================
 
   jogador: {
     backgroundColor: "#FFFFFF",
@@ -176,26 +437,74 @@ const styles = {
     backgroundColor: "#D9F2E3",
   },
 
+  informacoes: {
+    flexDirection: "column" as const,
+  },
+
+  // ===================================================
+  // NOME
+  // ===================================================
+
   nome: {
     color: "#0B3D20",
     fontSize: 17,
     fontWeight: "bold" as const,
   },
 
+  // ===================================================
+  // ESTRELAS
+  // ===================================================
+
   estrelas: {
     fontSize: 15,
     marginTop: 4,
   },
 
+  // ===================================================
+  // SEM RESULTADO
+  // ===================================================
+
+  semResultado: {
+    alignItems: "center" as const,
+    paddingVertical: 25,
+  },
+
+  iconeNenhum: {
+    fontSize: 30,
+    marginBottom: 8,
+  },
+
   nenhum: {
     color: "#FFFFFF",
     textAlign: "center" as const,
-    padding: 20,
+    fontSize: 15,
+    marginBottom: 12,
   },
+
+  // ===================================================
+  // BOTÃO LIMPAR
+  // ===================================================
+
+  botaoLimpar: {
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 15,
+    paddingVertical: 9,
+    borderRadius: 8,
+  },
+
+  textoBotaoLimpar: {
+    color: "#0B3D20",
+    fontSize: 12,
+    fontWeight: "bold" as const,
+  },
+
+  // ===================================================
+  // RODAPÉ
+  // ===================================================
 
   rodape: {
     borderTopWidth: 1,
-    borderTopColor: "#FFFFFF",
+    borderTopColor: "rgba(255,255,255,0.3)",
     paddingTop: 15,
   },
 
@@ -205,6 +514,10 @@ const styles = {
     marginBottom: 10,
     textAlign: "center" as const,
   },
+
+  // ===================================================
+  // BOTÃO CONFIRMAR
+  // ===================================================
 
   botao: {
     backgroundColor: "#FFFFFF",

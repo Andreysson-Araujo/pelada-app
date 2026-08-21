@@ -34,30 +34,26 @@ export function sortearTimes(
   jogadoresPorTime: number,
 ): Time[] {
   // ===================================================
-  // VALIDAÇÕES
+  // VALIDAÇÃO
   // ===================================================
 
   if (jogadoresPorTime <= 0) {
     return [];
   }
 
-  // ===================================================
-  // QUANTIDADE DE TIMES PRINCIPAIS
-  // ===================================================
-  //
-  // Cada goleiro representa um time principal.
-  //
-  // Exemplo:
-  //
-  // 4 goleiros → 4 times principais
-  // 5 goleiros → 5 times principais
-  //
-  // ===================================================
-
-  const quantidadeTimesPrincipais = goleiros.length;
+  if (jogadores.length === 0) {
+    return goleiros.map((goleiro) => ({
+      goleiro,
+      jogadores: [],
+    }));
+  }
 
   // ===================================================
   // CRIAR TIMES PRINCIPAIS
+  // ===================================================
+  //
+  // Cada goleiro = 1 time.
+  //
   // ===================================================
 
   const times: Time[] = goleiros.map((goleiro) => ({
@@ -66,15 +62,10 @@ export function sortearTimes(
   }));
 
   // ===================================================
-  // SE NÃO EXISTIR GOLEIRO
-  // ===================================================
-  //
-  // Ainda podemos criar um time sem goleiro para
-  // acomodar os jogadores.
-  //
+  // SE NÃO HOUVER GOLEIROS
   // ===================================================
 
-  if (times.length === 0 && jogadores.length > 0) {
+  if (times.length === 0) {
     times.push({
       goleiro: null,
       jogadores: [],
@@ -82,7 +73,7 @@ export function sortearTimes(
   }
 
   // ===================================================
-  // EMBARALHAR JOGADORES
+  // EMBARALHAR
   // ===================================================
 
   const jogadoresEmbaralhados = embaralhar(jogadores);
@@ -90,11 +81,15 @@ export function sortearTimes(
   // ===================================================
   // ORDENAR POR ESTRELAS
   // ===================================================
+  //
+  // Os jogadores mais fortes entram primeiro.
+  //
+  // ===================================================
 
   jogadoresEmbaralhados.sort((a, b) => b.estrelas - a.estrelas);
 
   // ===================================================
-  // DISTRIBUIR JOGADORES NOS TIMES PRINCIPAIS
+  // DISTRIBUIR JOGADORES
   // ===================================================
 
   jogadoresEmbaralhados.forEach((jogador) => {
@@ -105,7 +100,7 @@ export function sortearTimes(
     let menorForca = Infinity;
 
     // =================================================
-    // PROCURAR UM TIME COM ESPAÇO
+    // PROCURAR O TIME MAIS ADEQUADO
     // =================================================
 
     times.forEach((time, index) => {
@@ -122,34 +117,31 @@ export function sortearTimes(
       }
 
       // -----------------------------------------------
-      // PRIMEIRO:
+      // PRIMEIRO CRITÉRIO:
       // MENOR QUANTIDADE
       // -----------------------------------------------
 
       if (quantidade < menorQuantidade) {
         menorQuantidade = quantidade;
-
         menorForca = forca;
-
         melhorTime = index;
 
         return;
       }
 
       // -----------------------------------------------
-      // SEGUNDO:
+      // SEGUNDO CRITÉRIO:
       // MENOR FORÇA
       // -----------------------------------------------
 
       if (quantidade === menorQuantidade && forca < menorForca) {
         menorForca = forca;
-
         melhorTime = index;
       }
     });
 
     // =================================================
-    // SE ENCONTROU TIME COM ESPAÇO
+    // ENCONTROU UM TIME COM ESPAÇO
     // =================================================
 
     if (melhorTime !== -1) {
@@ -162,9 +154,7 @@ export function sortearTimes(
     // TODOS OS TIMES ESTÃO CHEIOS
     // =================================================
     //
-    // Criar novo time SEM GOLEIRO.
-    //
-    // Esse time será completado posteriormente.
+    // Criar novo time sem goleiro.
     //
     // =================================================
 
