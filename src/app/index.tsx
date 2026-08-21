@@ -1,8 +1,17 @@
 import { useEffect, useRef, useState } from "react";
 
-import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import {
+  Alert,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
+
+import * as Clipboard from "expo-clipboard";
 
 import { router } from "expo-router";
 
@@ -123,6 +132,53 @@ export default function Home() {
   }
 
   // ===================================================
+  // COPIAR TIMES
+  // ===================================================
+
+  async function copiarTimes() {
+    if (times.length === 0) {
+      return;
+    }
+
+    let texto = "⚽ TIMES DA PELADA ⚽\n\n";
+
+    times.forEach((time, index) => {
+      texto += `🏆 TIME ${index + 1}\n`;
+
+      // -----------------------------------------------
+      // GOLEIRO
+      // -----------------------------------------------
+
+      if (time.goleiro) {
+        texto += `🧤 ${time.goleiro.nome} ${"⭐".repeat(
+          time.goleiro.estrelas,
+        )}\n`;
+      }
+
+      // -----------------------------------------------
+      // JOGADORES
+      // -----------------------------------------------
+
+      time.jogadores.forEach((jogador) => {
+        texto += `⚽ ${jogador.nome} ${"⭐".repeat(jogador.estrelas)}\n`;
+      });
+
+      texto += "\n";
+    });
+
+    // -----------------------------------------------
+    // COPIAR PARA ÁREA DE TRANSFERÊNCIA
+    // -----------------------------------------------
+
+    await Clipboard.setStringAsync(texto);
+
+    Alert.alert(
+      "Copiado! ⚽",
+      "Os times foram copiados. Agora é só colar no grupo.",
+    );
+  }
+
+  // ===================================================
   // SEPARAR TIMES
   // ===================================================
 
@@ -198,7 +254,7 @@ export default function Home() {
     // -----------------------------------------------
 
     if (todosJogadores.length === 0) {
-      console.log("Nenhum jogador informado.");
+      Alert.alert("Atenção", "Adicione pelo menos um jogador de linha.");
 
       return;
     }
@@ -246,7 +302,7 @@ export default function Home() {
       {/* TÍTULO */}
       {/* ============================================= */}
 
-      <Text style={styles.titulo}>⚽ PELADA DOS MORTOS</Text>
+      <Text style={styles.titulo}>⚽ PELADA DOS MORTOS 🧟</Text>
 
       {/* ============================================= */}
       {/* SELECIONAR JOGADORES */}
@@ -394,6 +450,14 @@ export default function Home() {
               ))}
             </View>
           ))}
+
+          {/* ========================================= */}
+          {/* BOTÃO COPIAR TIMES */}
+          {/* ========================================= */}
+
+          <Pressable style={styles.botaoCopiar} onPress={copiarTimes}>
+            <Text style={styles.textoBotaoCopiar}>📋 COPIAR TIMES</Text>
+          </Pressable>
         </View>
       )}
 

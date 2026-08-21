@@ -177,4 +177,17 @@ export const styles = StyleSheet.create({
     fontSize: 17,
     marginBottom: 10,
   },
+  botaoCopiar: {
+    backgroundColor: "#FFFFFF",
+    padding: 16,
+    borderRadius: 10,
+    marginTop: 10,
+    alignItems: "center",
+  },
+
+  textoBotaoCopiar: {
+    color: "#0B3D20",
+    fontSize: 18,
+    fontWeight: "bold",
+  },
 });

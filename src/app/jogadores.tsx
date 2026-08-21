@@ -10,7 +10,7 @@ import {
 } from "react-native";
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
-
+import * as Clipboard from "expo-clipboard";
 import { router } from "expo-router";
 
 import { styles } from "../styles/jogadoresStyles";
@@ -24,6 +24,8 @@ type Jogador = {
   nome: string;
   estrelas: number;
   goleiro: boolean;
+  gols: number;
+  assistencias: number;
 };
 
 // =====================================================
@@ -38,21 +40,11 @@ export default function Jogadores() {
   const [jogadores, setJogadores] = useState<Jogador[]>([]);
 
   // ===================================================
-  // NOME
+  // FORMULÁRIO
   // ===================================================
 
   const [nome, setNome] = useState("");
-
-  // ===================================================
-  // ESTRELAS
-  // ===================================================
-
   const [estrelas, setEstrelas] = useState(3);
-
-  // ===================================================
-  // GOLEIRO
-  // ===================================================
-
   const [goleiro, setGoleiro] = useState(false);
 
   // ===================================================
@@ -60,6 +52,14 @@ export default function Jogadores() {
   // ===================================================
 
   const [jogadorEditando, setJogadorEditando] = useState<string | null>(null);
+
+  // ===================================================
+  // IMPORTAÇÃO
+  // ===================================================
+
+  const [mostrarImportacao, setMostrarImportacao] = useState(false);
+
+  const [textoImportacao, setTextoImportacao] = useState("");
 
   // ===================================================
   // CARREGAR JOGADORES
@@ -74,7 +74,17 @@ export default function Jogadores() {
       const dados = await AsyncStorage.getItem("jogadores");
 
       if (dados) {
-        setJogadores(JSON.parse(dados));
+        const lista = JSON.parse(dados);
+
+        const listaCorrigida = lista.map((jogador: Jogador) => ({
+          ...jogador,
+          gols: jogador.gols ?? 0,
+          assistencias: jogador.assistencias ?? 0,
+        }));
+
+        setJogadores(listaCorrigida);
+
+        await AsyncStorage.setItem("jogadores", JSON.stringify(listaCorrigida));
       }
     } catch (error) {
       console.log("Erro ao carregar jogadores:", error);
@@ -103,11 +113,8 @@ export default function Jogadores() {
 
   function limparFormulario() {
     setNome("");
-
     setEstrelas(3);
-
     setGoleiro(false);
-
     setJogadorEditando(null);
   }
 
@@ -117,10 +124,6 @@ export default function Jogadores() {
 
   async function salvarJogador() {
     const nomeLimpo = nome.trim();
-
-    // -----------------------------------------------
-    // VERIFICAR NOME
-    // -----------------------------------------------
 
     if (!nomeLimpo) {
       Alert.alert("Atenção", "Digite o nome do jogador.");
@@ -137,12 +140,11 @@ export default function Jogadores() {
         if (jogador.id === jogadorEditando) {
           return {
             ...jogador,
-
             nome: nomeLimpo,
-
             estrelas,
-
             goleiro,
+            gols: jogador.gols ?? 0,
+            assistencias: jogador.assistencias ?? 0,
           };
         }
 
@@ -159,7 +161,7 @@ export default function Jogadores() {
     }
 
     // =================================================
-    // NOVO JOGADOR
+    // VERIFICAR DUPLICADO
     // =================================================
 
     const jogadorExistente = jogadores.some(
@@ -172,14 +174,17 @@ export default function Jogadores() {
       return;
     }
 
+    // =================================================
+    // NOVO JOGADOR
+    // =================================================
+
     const novoJogador: Jogador = {
       id: Date.now().toString(),
-
       nome: nomeLimpo,
-
       estrelas,
-
       goleiro,
+      gols: 0,
+      assistencias: 0,
     };
 
     const novaLista = [...jogadores, novoJogador];
@@ -195,11 +200,8 @@ export default function Jogadores() {
 
   function editarJogador(jogador: Jogador) {
     setNome(jogador.nome);
-
     setEstrelas(jogador.estrelas);
-
     setGoleiro(jogador.goleiro);
-
     setJogadorEditando(jogador.id);
   }
 
@@ -210,27 +212,15 @@ export default function Jogadores() {
   function excluirJogador(jogador: Jogador) {
     Alert.alert(
       "Excluir jogador",
-
       `Deseja realmente excluir ${jogador.nome}?`,
-
       [
-        // -------------------------------------------
-        // CANCELAR
-        // -------------------------------------------
-
         {
           text: "Cancelar",
-
           style: "cancel",
         },
 
-        // -------------------------------------------
-        // EXCLUIR
-        // -------------------------------------------
-
         {
           text: "Excluir",
-
           style: "destructive",
 
           onPress: async () => {
@@ -239,17 +229,7 @@ export default function Jogadores() {
                 (item) => item.id !== jogador.id,
               );
 
-              await AsyncStorage.setItem(
-                "jogadores",
-
-                JSON.stringify(novaLista),
-              );
-
-              setJogadores(novaLista);
-
-              // Se estava editando
-              // esse jogador,
-              // limpa o formulário.
+              await salvarJogadores(novaLista);
 
               if (jogadorEditando === jogador.id) {
                 limparFormulario();
@@ -257,16 +237,57 @@ export default function Jogadores() {
             } catch (error) {
               console.log("Erro ao excluir jogador:", error);
 
-              Alert.alert(
-                "Erro",
-
-                "Não foi possível excluir o jogador.",
-              );
+              Alert.alert("Erro", "Não foi possível excluir o jogador.");
             }
           },
         },
       ],
     );
+  }
+
+  // ===================================================
+  // ALTERAR GOLS
+  // ===================================================
+
+  async function alterarGols(jogador: Jogador, quantidade: number) {
+    const novaQuantidade = Math.max(0, (jogador.gols ?? 0) + quantidade);
+
+    const novaLista = jogadores.map((item) => {
+      if (item.id === jogador.id) {
+        return {
+          ...item,
+          gols: novaQuantidade,
+        };
+      }
+
+      return item;
+    });
+
+    await salvarJogadores(novaLista);
+  }
+
+  // ===================================================
+  // ALTERAR ASSISTÊNCIAS
+  // ===================================================
+
+  async function alterarAssistencias(jogador: Jogador, quantidade: number) {
+    const novaQuantidade = Math.max(
+      0,
+      (jogador.assistencias ?? 0) + quantidade,
+    );
+
+    const novaLista = jogadores.map((item) => {
+      if (item.id === jogador.id) {
+        return {
+          ...item,
+          assistencias: novaQuantidade,
+        };
+      }
+
+      return item;
+    });
+
+    await salvarJogadores(novaLista);
   }
 
   // ===================================================
@@ -278,6 +299,191 @@ export default function Jogadores() {
   }
 
   // ===================================================
+  // EXPORTAR JOGADORES
+  // ===================================================
+
+  async function exportarJogadores() {
+    if (jogadores.length === 0) {
+      Alert.alert("Atenção", "Não existem jogadores para exportar.");
+
+      return;
+    }
+
+    let texto = "";
+
+    texto += "⚽ PELADA APP\n";
+    texto += "📋 LISTA DE JOGADORES\n";
+    texto += "━━━━━━━━━━━━━━━━━━━━\n\n";
+
+    jogadores.forEach((jogador) => {
+      texto +=
+        `👤 ${jogador.nome} | ` +
+        `⭐ ${jogador.estrelas} | ` +
+        `${jogador.goleiro ? "GOLEIRO" : "LINHA"} | ` +
+        `⚽ ${jogador.gols ?? 0} | ` +
+        `🅰️ ${jogador.assistencias ?? 0}\n`;
+    });
+
+    texto += "\n";
+    texto += "━━━━━━━━━━━━━━━━━━━━\n";
+    texto += "🔐 PELADA_APP_V1";
+
+    try {
+      await Clipboard.setStringAsync(texto);
+
+      Alert.alert(
+        "Lista exportada!",
+        "A lista foi copiada. Agora você pode colar no WhatsApp e enviar para outro celular.",
+      );
+    } catch (error) {
+      console.log("Erro ao exportar:", error);
+
+      Alert.alert("Erro", "Não foi possível copiar a lista.");
+    }
+  }
+
+  // ===================================================
+  // ABRIR IMPORTAÇÃO
+  // ===================================================
+
+  function abrirImportacao() {
+    setTextoImportacao("");
+
+    setMostrarImportacao(true);
+  }
+
+  // ===================================================
+  // IMPORTAR JOGADORES
+  // ===================================================
+
+  async function importarJogadores() {
+    if (!textoImportacao.trim()) {
+      Alert.alert("Atenção", "Cole a lista de jogadores primeiro.");
+
+      return;
+    }
+
+    // =================================================
+    // VERIFICAR FORMATO
+    // =================================================
+
+    if (!textoImportacao.includes("PELADA_APP_V1")) {
+      Alert.alert(
+        "Lista inválida",
+        "Esse texto não parece ser uma lista exportada pelo Pelada App.",
+      );
+
+      return;
+    }
+
+    try {
+      const linhas = textoImportacao.split("\n");
+
+      const jogadoresImportados: Jogador[] = [];
+
+      // =================================================
+      // LER CADA JOGADOR
+      // =================================================
+
+      for (const linha of linhas) {
+        if (!linha.startsWith("👤")) {
+          continue;
+        }
+
+        const partes = linha.split("|");
+
+        if (partes.length < 5) {
+          continue;
+        }
+
+        const nome = partes[0].replace("👤", "").trim();
+
+        const estrelasTexto = partes[1].replace("⭐", "").trim();
+
+        const estrelas = parseInt(estrelasTexto);
+
+        const tipo = partes[2].trim();
+
+        const golsTexto = partes[3].replace("⚽", "").trim();
+
+        const gols = parseInt(golsTexto);
+
+        const assistenciasTexto = partes[4].replace("🅰️", "").trim();
+
+        const assistencias = parseInt(assistenciasTexto);
+
+        // ===============================================
+        // VALIDAR
+        // ===============================================
+
+        if (!nome || isNaN(estrelas)) {
+          continue;
+        }
+
+        jogadoresImportados.push({
+          id: Date.now().toString() + Math.random(),
+
+          nome,
+
+          estrelas,
+
+          goleiro: tipo === "GOLEIRO",
+
+          gols: isNaN(gols) ? 0 : gols,
+
+          assistencias: isNaN(assistencias) ? 0 : assistencias,
+        });
+      }
+
+      // =================================================
+      // NENHUM JOGADOR
+      // =================================================
+
+      if (jogadoresImportados.length === 0) {
+        Alert.alert("Erro", "Nenhum jogador válido foi encontrado.");
+
+        return;
+      }
+
+      // =================================================
+      // EVITAR DUPLICADOS
+      // =================================================
+
+      const jogadoresSemDuplicados = [...jogadores];
+
+      for (const jogador of jogadoresImportados) {
+        const jaExiste = jogadoresSemDuplicados.some(
+          (existente) =>
+            existente.nome.toLowerCase() === jogador.nome.toLowerCase(),
+        );
+
+        if (!jaExiste) {
+          jogadoresSemDuplicados.push(jogador);
+        }
+      }
+
+      // =================================================
+      // SALVAR
+      // =================================================
+
+      await salvarJogadores(jogadoresSemDuplicados);
+
+      setMostrarImportacao(false);
+
+      setTextoImportacao("");
+
+      Alert.alert(
+        "Importação concluída!",
+        `${jogadoresImportados.length} jogador(es) encontrado(s).`,
+      );
+    } catch (error) {
+      console.log("Erro ao importar jogadores:", error);
+
+      Alert.alert("Erro", "Não foi possível interpretar a lista.");
+    }
+  }
+
+  // ===================================================
   // TELA
   // ===================================================
 
@@ -286,23 +492,23 @@ export default function Jogadores() {
       contentContainerStyle={styles.container}
       keyboardShouldPersistTaps="handled"
     >
-      {/* ============================================= */}
-      {/* VOLTAR */}
-      {/* ============================================= */}
+      {/* =================================================
+          VOLTAR
+      ================================================= */}
 
       <Pressable style={styles.botaoVoltar} onPress={() => router.back()}>
         <Text style={styles.textoVoltar}>← VOLTAR</Text>
       </Pressable>
 
-      {/* ============================================= */}
-      {/* TÍTULO */}
-      {/* ============================================= */}
+      {/* =================================================
+          TÍTULO
+      ================================================= */}
 
       <Text style={styles.titulo}>👥 JOGADORES</Text>
 
-      {/* ============================================= */}
-      {/* FORMULÁRIO */}
-      {/* ============================================= */}
+      {/* =================================================
+          FORMULÁRIO
+      ================================================= */}
 
       <View style={styles.formulario}>
         <Text style={styles.subtitulo}>
@@ -310,6 +516,8 @@ export default function Jogadores() {
         </Text>
 
         {/* NOME */}
+
+        <Text style={styles.label}>Nome do jogador</Text>
 
         <TextInput
           style={styles.input}
@@ -319,9 +527,7 @@ export default function Jogadores() {
           onChangeText={setNome}
         />
 
-        {/* ========================================= */}
         {/* ESTRELAS */}
-        {/* ========================================= */}
 
         <Text style={styles.label}>Nível do jogador</Text>
 
@@ -335,9 +541,7 @@ export default function Jogadores() {
           ))}
         </View>
 
-        {/* ========================================= */}
         {/* GOLEIRO */}
-        {/* ========================================= */}
 
         <Pressable
           style={[styles.botaoGoleiro, goleiro && styles.botaoGoleiroAtivo]}
@@ -350,9 +554,7 @@ export default function Jogadores() {
           </Text>
         </Pressable>
 
-        {/* ========================================= */}
         {/* SALVAR */}
-        {/* ========================================= */}
 
         <Pressable style={styles.botaoSalvar} onPress={salvarJogador}>
           <Text style={styles.textoBotaoSalvar}>
@@ -360,9 +562,7 @@ export default function Jogadores() {
           </Text>
         </Pressable>
 
-        {/* ========================================= */}
-        {/* CANCELAR EDIÇÃO */}
-        {/* ========================================= */}
+        {/* CANCELAR */}
 
         {jogadorEditando && (
           <Pressable style={styles.botaoCancelar} onPress={limparFormulario}>
@@ -371,60 +571,172 @@ export default function Jogadores() {
         )}
       </View>
 
-      {/* ============================================= */}
-      {/* LISTA */}
-      {/* ============================================= */}
+      {/* =================================================
+          LISTA
+      ================================================= */}
 
       <Text style={styles.tituloLista}>Jogadores cadastrados</Text>
+
+      {/* =================================================
+          EXPORTAR / IMPORTAR
+      ================================================= */}
+
+      <View style={styles.botoesExportacao}>
+        <Pressable style={styles.botaoExportar} onPress={exportarJogadores}>
+          <Text style={styles.textoBotaoExportar}>📤 EXPORTAR</Text>
+        </Pressable>
+
+        <Pressable style={styles.botaoImportar} onPress={abrirImportacao}>
+          <Text style={styles.textoBotaoImportar}>📥 IMPORTAR</Text>
+        </Pressable>
+      </View>
+
+      {/* =================================================
+          ÁREA DE IMPORTAÇÃO
+      ================================================= */}
+
+      {mostrarImportacao && (
+        <View style={styles.formulario}>
+          <Text style={styles.subtitulo}>📥 Importar jogadores</Text>
+
+          <Text style={styles.label}>
+            Cole aqui a lista recebida pelo WhatsApp
+          </Text>
+
+          <TextInput
+            style={[styles.input, styles.inputImportacao]}
+            placeholder="Cole a mensagem aqui..."
+            placeholderTextColor="#888"
+            value={textoImportacao}
+            onChangeText={setTextoImportacao}
+            multiline
+            textAlignVertical="top"
+          />
+
+          <Pressable style={styles.botaoSalvar} onPress={importarJogadores}>
+            <Text style={styles.textoBotaoSalvar}>📥 IMPORTAR JOGADORES</Text>
+          </Pressable>
+
+          <Pressable
+            style={styles.botaoCancelar}
+            onPress={() => setMostrarImportacao(false)}
+          >
+            <Text style={styles.textoCancelar}>CANCELAR</Text>
+          </Pressable>
+        </View>
+      )}
+
+      {/* =================================================
+          NENHUM JOGADOR
+      ================================================= */}
 
       {jogadores.length === 0 && (
         <Text style={styles.nenhumJogador}>Nenhum jogador cadastrado.</Text>
       )}
 
-      {/* ============================================= */}
-      {/* CARDS */}
-      {/* ============================================= */}
+      {/* =================================================
+          CARDS
+      ================================================= */}
 
       {jogadores.map((jogador) => (
         <View key={jogador.id} style={styles.cardJogador}>
-          {/* INFORMAÇÕES */}
-
           <View style={styles.infoJogador}>
-            <Text style={styles.nomeJogador}>
-              {jogador.goleiro ? "🧤 " : "⚽ "}
+            {/* CABEÇALHO */}
 
-              {jogador.nome}
-            </Text>
+            <View style={styles.cabecalhoJogador}>
+              <View style={styles.identidadeJogador}>
+                <Text style={styles.nomeJogador}>
+                  {jogador.goleiro ? "🧤 " : "⚽ "}
+                  {jogador.nome}
+                </Text>
 
-            <Text style={styles.estrelasJogador}>
-              {renderEstrelas(jogador.estrelas)}
-            </Text>
+                <View style={styles.linhaInfo}>
+                  <Text style={styles.estrelasJogador}>
+                    {renderEstrelas(jogador.estrelas)}
+                  </Text>
 
-            <Text style={styles.tipoJogador}>
-              {jogador.goleiro ? "Goleiro" : "Jogador de linha"}
-            </Text>
-          </View>
+                  <Text style={styles.tipoJogador}>
+                    {jogador.goleiro ? "Goleiro" : "Jogador de linha"}
+                  </Text>
+                </View>
+              </View>
 
-          {/* BOTÕES */}
+              {/* EDITAR / EXCLUIR */}
 
-          <View style={styles.acoes}>
-            {/* EDITAR */}
+              <View style={styles.acoes}>
+                <Pressable
+                  style={styles.botaoEditar}
+                  onPress={() => editarJogador(jogador)}
+                >
+                  <Text style={styles.textoAcao}>✏️</Text>
+                </Pressable>
 
-            <Pressable
-              style={styles.botaoEditar}
-              onPress={() => editarJogador(jogador)}
-            >
-              <Text style={styles.textoAcao}>✏️</Text>
-            </Pressable>
+                <Pressable
+                  style={styles.botaoExcluir}
+                  onPress={() => excluirJogador(jogador)}
+                >
+                  <Text style={styles.textoAcao}>🗑️</Text>
+                </Pressable>
+              </View>
+            </View>
 
-            {/* EXCLUIR */}
+            {/* =================================================
+                ESTATÍSTICAS
+            ================================================= */}
 
-            <Pressable
-              style={styles.botaoExcluir}
-              onPress={() => excluirJogador(jogador)}
-            >
-              <Text style={styles.textoAcao}>🗑️</Text>
-            </Pressable>
+            <View style={styles.estatisticasContainer}>
+              {/* GOLS */}
+
+              <View style={styles.estatisticaBox}>
+                <Text style={styles.tituloEstatistica}>⚽ GOLS</Text>
+
+                <View style={styles.contadorEstatistica}>
+                  <Pressable
+                    style={styles.botaoMenos}
+                    onPress={() => alterarGols(jogador, -1)}
+                  >
+                    <Text style={styles.textoContadorEstatistica}>−</Text>
+                  </Pressable>
+
+                  <Text style={styles.numeroEstatistica}>
+                    {jogador.gols ?? 0}
+                  </Text>
+
+                  <Pressable
+                    style={styles.botaoMais}
+                    onPress={() => alterarGols(jogador, 1)}
+                  >
+                    <Text style={styles.textoContadorEstatistica}>+</Text>
+                  </Pressable>
+                </View>
+              </View>
+
+              {/* ASSISTÊNCIAS */}
+
+              <View style={styles.estatisticaBox}>
+                <Text style={styles.tituloEstatistica}>🅰️ ASSIST.</Text>
+
+                <View style={styles.contadorEstatistica}>
+                  <Pressable
+                    style={styles.botaoMenos}
+                    onPress={() => alterarAssistencias(jogador, -1)}
+                  >
+                    <Text style={styles.textoContadorEstatistica}>−</Text>
+                  </Pressable>
+
+                  <Text style={styles.numeroEstatistica}>
+                    {jogador.assistencias ?? 0}
+                  </Text>
+
+                  <Pressable
+                    style={styles.botaoMais}
+                    onPress={() => alterarAssistencias(jogador, 1)}
+                  >
+                    <Text style={styles.textoContadorEstatistica}>+</Text>
+                  </Pressable>
+                </View>
+              </View>
+            </View>
           </View>
         </View>
       ))}

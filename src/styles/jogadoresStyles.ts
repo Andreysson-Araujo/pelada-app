@@ -1,6 +1,10 @@
 import { StyleSheet } from "react-native";
 
 export const styles = StyleSheet.create({
+  // =========================================================
+  // CONTAINER
+  // =========================================================
+
   container: {
     flexGrow: 1,
     backgroundColor: "#0B3D20",
@@ -9,9 +13,9 @@ export const styles = StyleSheet.create({
     paddingBottom: 40,
   },
 
-  // ==========================================
+  // =========================================================
   // VOLTAR
-  // ==========================================
+  // =========================================================
 
   botaoVoltar: {
     alignSelf: "flex-start",
@@ -28,26 +32,15 @@ export const styles = StyleSheet.create({
     fontWeight: "bold",
   },
 
-  // ==========================================
-  // TÍTULO
-  // ==========================================
+  // =========================================================
+  // TÍTULOS
+  // =========================================================
 
   titulo: {
     color: "#FFFFFF",
     fontSize: 32,
     fontWeight: "bold",
     textAlign: "center",
-    marginBottom: 30,
-  },
-
-  // ==========================================
-  // FORMULÁRIO
-  // ==========================================
-
-  formulario: {
-    backgroundColor: "#174F2D",
-    padding: 20,
-    borderRadius: 15,
     marginBottom: 30,
   },
 
@@ -58,13 +51,22 @@ export const styles = StyleSheet.create({
     marginBottom: 15,
   },
 
-  input: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 10,
-    padding: 15,
-    fontSize: 18,
-    marginBottom: 20,
-    color: "#222222",
+  tituloLista: {
+    color: "#FFFFFF",
+    fontSize: 24,
+    fontWeight: "bold",
+    marginBottom: 15,
+  },
+
+  // =========================================================
+  // FORMULÁRIO
+  // =========================================================
+
+  formulario: {
+    backgroundColor: "#174F2D",
+    padding: 20,
+    borderRadius: 15,
+    marginBottom: 30,
   },
 
   label: {
@@ -74,9 +76,18 @@ export const styles = StyleSheet.create({
     marginBottom: 8,
   },
 
-  // ==========================================
-  // ESTRELAS
-  // ==========================================
+  input: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 10,
+    padding: 15,
+    fontSize: 18,
+    color: "#222222",
+    marginBottom: 20,
+  },
+
+  // =========================================================
+  // AVALIAÇÃO / ESTRELAS
+  // =========================================================
 
   estrelasContainer: {
     flexDirection: "row",
@@ -89,9 +100,9 @@ export const styles = StyleSheet.create({
     marginRight: 5,
   },
 
-  // ==========================================
+  // =========================================================
   // GOLEIRO
-  // ==========================================
+  // =========================================================
 
   botaoGoleiro: {
     backgroundColor: "#FFFFFF",
@@ -107,17 +118,17 @@ export const styles = StyleSheet.create({
 
   textoGoleiro: {
     color: "#0B3D20",
-    fontWeight: "bold",
     fontSize: 16,
+    fontWeight: "bold",
   },
 
   textoGoleiroAtivo: {
     color: "#FFFFFF",
   },
 
-  // ==========================================
-  // SALVAR
-  // ==========================================
+  // =========================================================
+  // BOTÕES DO FORMULÁRIO
+  // =========================================================
 
   botaoSalvar: {
     backgroundColor: "#FFFFFF",
@@ -132,10 +143,6 @@ export const styles = StyleSheet.create({
     fontWeight: "bold",
   },
 
-  // ==========================================
-  // CANCELAR
-  // ==========================================
-
   botaoCancelar: {
     marginTop: 10,
     padding: 12,
@@ -148,36 +155,36 @@ export const styles = StyleSheet.create({
     fontWeight: "bold",
   },
 
-  // ==========================================
+  // =========================================================
   // LISTA
-  // ==========================================
-
-  tituloLista: {
-    color: "#FFFFFF",
-    fontSize: 24,
-    fontWeight: "bold",
-    marginBottom: 15,
-  },
+  // =========================================================
 
   nenhumJogador: {
     color: "#FFFFFF",
-    textAlign: "center",
     fontSize: 16,
+    textAlign: "center",
     marginTop: 20,
   },
 
-  // ==========================================
-  // CARD
-  // ==========================================
+  // =========================================================
+  // CARD DO JOGADOR
+  // =========================================================
 
   cardJogador: {
     backgroundColor: "#FFFFFF",
     borderRadius: 12,
     padding: 15,
     marginBottom: 12,
+  },
+
+  cabecalhoJogador: {
     flexDirection: "row",
-    alignItems: "center",
     justifyContent: "space-between",
+    alignItems: "flex-start",
+  },
+
+  identidadeJogador: {
+    flex: 1,
   },
 
   infoJogador: {
@@ -191,6 +198,12 @@ export const styles = StyleSheet.create({
     marginBottom: 5,
   },
 
+  linhaInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 4,
+  },
+
   estrelasJogador: {
     fontSize: 17,
     marginBottom: 3,
@@ -199,11 +212,88 @@ export const styles = StyleSheet.create({
   tipoJogador: {
     color: "#666666",
     fontSize: 13,
+    marginLeft: 8,
   },
 
-  // ==========================================
-  // AÇÕES
-  // ==========================================
+  // =========================================================
+  // ESTATÍSTICAS
+  // =========================================================
+
+  estatisticasContainer: {
+    flexDirection: "row",
+    gap: 12,
+    marginTop: 18,
+  },
+
+  estatisticaBox: {
+    flex: 1,
+    backgroundColor: "#F2F5F3",
+    borderRadius: 10,
+    padding: 10,
+  },
+
+  estatistica: {
+    marginTop: 12,
+  },
+
+  tituloEstatistica: {
+    color: "#0B3D20",
+    fontSize: 13,
+    fontWeight: "bold",
+    marginBottom: 8,
+  },
+
+  textoEstatistica: {
+    color: "#0B3D20",
+    fontSize: 16,
+    fontWeight: "bold",
+    marginBottom: 6,
+  },
+
+  contadorEstatistica: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  numeroEstatistica: {
+    minWidth: 45,
+    color: "#0B3D20",
+    fontSize: 20,
+    fontWeight: "bold",
+    textAlign: "center",
+  },
+
+  // =========================================================
+  // BOTÕES DE ESTATÍSTICA
+  // =========================================================
+
+  botaoMenos: {
+    width: 35,
+    height: 35,
+    backgroundColor: "#0B3D20",
+    borderRadius: 8,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  botaoMais: {
+    width: 35,
+    height: 35,
+    backgroundColor: "#0B3D20",
+    borderRadius: 8,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  textoContadorEstatistica: {
+    color: "#FFFFFF",
+    fontSize: 22,
+    fontWeight: "bold",
+  },
+
+  // =========================================================
+  // AÇÕES DO JOGADOR
+  // =========================================================
 
   acoes: {
     flexDirection: "row",
@@ -211,9 +301,9 @@ export const styles = StyleSheet.create({
   },
 
   botaoEditar: {
-    backgroundColor: "#05868f",
     width: 45,
     height: 45,
+    backgroundColor: "#05868F",
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
@@ -221,9 +311,9 @@ export const styles = StyleSheet.create({
   },
 
   botaoExcluir: {
-    backgroundColor: "#e41e1e",
     width: 45,
     height: 45,
+    backgroundColor: "#E41E1E",
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
@@ -231,5 +321,43 @@ export const styles = StyleSheet.create({
 
   textoAcao: {
     fontSize: 20,
+  },
+  botoesExportacao: {
+    flexDirection: "row",
+    gap: 10,
+    marginBottom: 20,
+  },
+
+  botaoExportar: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+    padding: 13,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+
+  botaoImportar: {
+    flex: 1,
+    backgroundColor: "#D4AF37",
+    padding: 13,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+
+  textoBotaoExportar: {
+    color: "#0B3D20",
+    fontSize: 14,
+    fontWeight: "bold",
+  },
+
+  textoBotaoImportar: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "bold",
+  },
+
+  inputImportacao: {
+    height: 180,
+    textAlignVertical: "top",
   },
 });

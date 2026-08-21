@@ -17,36 +17,69 @@ function embaralhar<T>(lista: T[]): T[] {
 }
 
 // =====================================================
+// CALCULAR FORÇA
+// =====================================================
+
+function calcularForca(time: Time): number {
+  return time.jogadores.reduce((total, jogador) => total + jogador.estrelas, 0);
+}
+
+// =====================================================
 // SORTEAR TIMES
 // =====================================================
 
 export function sortearTimes(
   jogadores: Jogador[],
-
   goleiros: Jogador[],
-
   jogadoresPorTime: number,
 ): Time[] {
   // ===================================================
-  // QUANTIDADE DE TIMES
+  // VALIDAÇÕES
   // ===================================================
 
-  const quantidadeTimes = Math.ceil(jogadores.length / jogadoresPorTime);
+  if (jogadoresPorTime <= 0) {
+    return [];
+  }
 
   // ===================================================
-  // CRIAR TIMES
+  // QUANTIDADE DE TIMES PRINCIPAIS
+  // ===================================================
+  //
+  // Cada goleiro representa um time principal.
+  //
+  // Exemplo:
+  //
+  // 4 goleiros → 4 times principais
+  // 5 goleiros → 5 times principais
+  //
   // ===================================================
 
-  const times: Time[] = Array.from(
-    {
-      length: quantidadeTimes,
-    },
+  const quantidadeTimesPrincipais = goleiros.length;
 
-    () => ({
+  // ===================================================
+  // CRIAR TIMES PRINCIPAIS
+  // ===================================================
+
+  const times: Time[] = goleiros.map((goleiro) => ({
+    goleiro,
+    jogadores: [],
+  }));
+
+  // ===================================================
+  // SE NÃO EXISTIR GOLEIRO
+  // ===================================================
+  //
+  // Ainda podemos criar um time sem goleiro para
+  // acomodar os jogadores.
+  //
+  // ===================================================
+
+  if (times.length === 0 && jogadores.length > 0) {
+    times.push({
       goleiro: null,
       jogadores: [],
-    }),
-  );
+    });
+  }
 
   // ===================================================
   // EMBARALHAR JOGADORES
@@ -56,73 +89,89 @@ export function sortearTimes(
 
   // ===================================================
   // ORDENAR POR ESTRELAS
-  //
-  // Os melhores jogadores são
-  // distribuídos primeiro.
   // ===================================================
 
   jogadoresEmbaralhados.sort((a, b) => b.estrelas - a.estrelas);
 
   // ===================================================
-  // DISTRIBUIR JOGADORES
+  // DISTRIBUIR JOGADORES NOS TIMES PRINCIPAIS
   // ===================================================
 
   jogadoresEmbaralhados.forEach((jogador) => {
     let melhorTime = -1;
 
+    let menorQuantidade = Infinity;
+
     let menorForca = Infinity;
 
+    // =================================================
+    // PROCURAR UM TIME COM ESPAÇO
+    // =================================================
+
     times.forEach((time, index) => {
-      // Quantidade atual
       const quantidade = time.jogadores.length;
 
-      // Força atual
-      const forca = time.jogadores.reduce(
-        (total, jogadorAtual) => {
-          return total + jogadorAtual.estrelas;
-        },
+      const forca = calcularForca(time);
 
-        0,
-      );
-
-      // -----------------------------------------
-      // Só pode receber se ainda tiver espaço
-      // -----------------------------------------
+      // -----------------------------------------------
+      // TIME CHEIO
+      // -----------------------------------------------
 
       if (quantidade >= jogadoresPorTime) {
         return;
       }
 
-      // -----------------------------------------
-      // Procurar o time mais fraco
-      // -----------------------------------------
+      // -----------------------------------------------
+      // PRIMEIRO:
+      // MENOR QUANTIDADE
+      // -----------------------------------------------
 
-      if (forca < menorForca) {
+      if (quantidade < menorQuantidade) {
+        menorQuantidade = quantidade;
+
+        menorForca = forca;
+
+        melhorTime = index;
+
+        return;
+      }
+
+      // -----------------------------------------------
+      // SEGUNDO:
+      // MENOR FORÇA
+      // -----------------------------------------------
+
+      if (quantidade === menorQuantidade && forca < menorForca) {
         menorForca = forca;
 
         melhorTime = index;
       }
     });
 
-    // ---------------------------------------------
-    // Adicionar jogador
-    // ---------------------------------------------
+    // =================================================
+    // SE ENCONTROU TIME COM ESPAÇO
+    // =================================================
 
     if (melhorTime !== -1) {
       times[melhorTime].jogadores.push(jogador);
+
+      return;
     }
-  });
 
-  // ===================================================
-  // DISTRIBUIR GOLEIROS
-  // ===================================================
+    // =================================================
+    // TODOS OS TIMES ESTÃO CHEIOS
+    // =================================================
+    //
+    // Criar novo time SEM GOLEIRO.
+    //
+    // Esse time será completado posteriormente.
+    //
+    // =================================================
 
-  const goleirosEmbaralhados = embaralhar(goleiros);
-
-  goleirosEmbaralhados.forEach((goleiro, index) => {
-    const timeIndex = index % times.length;
-
-    times[timeIndex].goleiro = goleiro;
+    times.push({
+      goleiro: null,
+      jogadores: [jogador],
+    });
   });
 
   // ===================================================
