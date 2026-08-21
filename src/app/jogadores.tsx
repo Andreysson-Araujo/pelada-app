@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import {
   Alert,
@@ -10,7 +10,9 @@ import {
 } from "react-native";
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
+
 import * as Clipboard from "expo-clipboard";
+
 import { router } from "expo-router";
 
 import { styles } from "../styles/jogadoresStyles";
@@ -34,6 +36,12 @@ type Jogador = {
 
 export default function Jogadores() {
   // ===================================================
+  // REFERÊNCIA DO SCROLL
+  // ===================================================
+
+  const scrollRef = useRef<ScrollView>(null);
+
+  // ===================================================
   // LISTA DE JOGADORES
   // ===================================================
 
@@ -44,7 +52,9 @@ export default function Jogadores() {
   // ===================================================
 
   const [nome, setNome] = useState("");
+
   const [estrelas, setEstrelas] = useState(3);
+
   const [goleiro, setGoleiro] = useState(false);
 
   // ===================================================
@@ -52,6 +62,19 @@ export default function Jogadores() {
   // ===================================================
 
   const [jogadorEditando, setJogadorEditando] = useState<string | null>(null);
+
+  // ===================================================
+  // PESQUISA
+  // ===================================================
+
+  const [busca, setBusca] = useState("");
+
+  // ===================================================
+  // FILTRO DE ESTRELAS
+  // null = todos
+  // ===================================================
+
+  const [filtroEstrelas, setFiltroEstrelas] = useState<number | null>(null);
 
   // ===================================================
   // IMPORTAÇÃO
@@ -113,8 +136,11 @@ export default function Jogadores() {
 
   function limparFormulario() {
     setNome("");
+
     setEstrelas(3);
+
     setGoleiro(false);
+
     setJogadorEditando(null);
   }
 
@@ -180,10 +206,15 @@ export default function Jogadores() {
 
     const novoJogador: Jogador = {
       id: Date.now().toString(),
+
       nome: nomeLimpo,
+
       estrelas,
+
       goleiro,
+
       gols: 0,
+
       assistencias: 0,
     };
 
@@ -199,10 +230,28 @@ export default function Jogadores() {
   // ===================================================
 
   function editarJogador(jogador: Jogador) {
+    // -----------------------------------------------
+    // CARREGAR DADOS NO FORMULÁRIO
+    // -----------------------------------------------
+
     setNome(jogador.nome);
+
     setEstrelas(jogador.estrelas);
+
     setGoleiro(jogador.goleiro);
+
     setJogadorEditando(jogador.id);
+
+    // -----------------------------------------------
+    // SUBIR PARA O FORMULÁRIO
+    // -----------------------------------------------
+
+    setTimeout(() => {
+      scrollRef.current?.scrollTo({
+        y: 0,
+        animated: true,
+      });
+    }, 100);
   }
 
   // ===================================================
@@ -212,7 +261,9 @@ export default function Jogadores() {
   function excluirJogador(jogador: Jogador) {
     Alert.alert(
       "Excluir jogador",
+
       `Deseja realmente excluir ${jogador.nome}?`,
+
       [
         {
           text: "Cancelar",
@@ -221,6 +272,7 @@ export default function Jogadores() {
 
         {
           text: "Excluir",
+
           style: "destructive",
 
           onPress: async () => {
@@ -312,7 +364,9 @@ export default function Jogadores() {
     let texto = "";
 
     texto += "⚽ PELADA APP\n";
+
     texto += "📋 LISTA DE JOGADORES\n";
+
     texto += "━━━━━━━━━━━━━━━━━━━━\n\n";
 
     jogadores.forEach((jogador) => {
@@ -325,7 +379,9 @@ export default function Jogadores() {
     });
 
     texto += "\n";
+
     texto += "━━━━━━━━━━━━━━━━━━━━\n";
+
     texto += "🔐 PELADA_APP_V1";
 
     try {
@@ -412,9 +468,9 @@ export default function Jogadores() {
 
         const assistencias = parseInt(assistenciasTexto);
 
-        // ===============================================
+        // =============================================
         // VALIDAR
-        // ===============================================
+        // =============================================
 
         if (!nome || isNaN(estrelas)) {
           continue;
@@ -484,11 +540,35 @@ export default function Jogadores() {
   }
 
   // ===================================================
+  // FILTRAR JOGADORES
+  // ===================================================
+
+  const jogadoresFiltrados = jogadores.filter((jogador) => {
+    // -----------------------------------------------
+    // PESQUISA POR NOME
+    // -----------------------------------------------
+
+    const correspondeNome = jogador.nome
+      .toLowerCase()
+      .includes(busca.toLowerCase());
+
+    // -----------------------------------------------
+    // FILTRO DE ESTRELAS
+    // -----------------------------------------------
+
+    const correspondeEstrelas =
+      filtroEstrelas === null || jogador.estrelas === filtroEstrelas;
+
+    return correspondeNome && correspondeEstrelas;
+  });
+
+  // ===================================================
   // TELA
   // ===================================================
 
   return (
     <ScrollView
+      ref={scrollRef}
       contentContainerStyle={styles.container}
       keyboardShouldPersistTaps="handled"
     >
@@ -572,7 +652,7 @@ export default function Jogadores() {
       </View>
 
       {/* =================================================
-          LISTA
+          TÍTULO DA LISTA
       ================================================= */}
 
       <Text style={styles.tituloLista}>Jogadores cadastrados</Text>
@@ -589,6 +669,78 @@ export default function Jogadores() {
         <Pressable style={styles.botaoImportar} onPress={abrirImportacao}>
           <Text style={styles.textoBotaoImportar}>📥 IMPORTAR</Text>
         </Pressable>
+      </View>
+
+      {/* =================================================
+          PESQUISA
+      ================================================= */}
+
+      <View style={styles.filtroContainer}>
+        <TextInput
+          style={styles.inputBusca}
+          placeholder="🔍 Procurar jogador..."
+          placeholderTextColor="#888"
+          value={busca}
+          onChangeText={setBusca}
+        />
+
+        {/* =================================================
+            FILTRO DE ESTRELAS
+        ================================================= */}
+
+        <Text style={styles.labelFiltro}>Filtrar por nível</Text>
+
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.filtroEstrelasScroll}
+          contentContainerStyle={styles.filtroEstrelasContainer}
+        >
+          {/* TODOS */}
+
+          <Pressable
+            style={[
+              styles.botaoFiltro,
+
+              filtroEstrelas === null && styles.botaoFiltroAtivo,
+            ]}
+            onPress={() => setFiltroEstrelas(null)}
+          >
+            <Text
+              style={[
+                styles.textoFiltro,
+
+                filtroEstrelas === null && styles.textoFiltroAtivo,
+              ]}
+            >
+              TODOS
+            </Text>
+          </Pressable>
+
+          {/* ESTRELAS */}
+
+          {[1, 2, 3, 4, 5].map((numero) => (
+            <Pressable
+              key={numero}
+              style={[
+                styles.botaoFiltro,
+
+                filtroEstrelas === numero && styles.botaoFiltroAtivo,
+              ]}
+              onPress={() => setFiltroEstrelas(numero)}
+            >
+              <Text
+                style={[
+                  styles.textoFiltro,
+
+                  filtroEstrelas === numero && styles.textoFiltroAtivo,
+                ]}
+              >
+                {"⭐".repeat(numero)}
+              </Text>
+            </Pressable>
+          ))}
+        </ScrollView>
       </View>
 
       {/* =================================================
@@ -635,10 +787,18 @@ export default function Jogadores() {
       )}
 
       {/* =================================================
+          NENHUM RESULTADO DO FILTRO
+      ================================================= */}
+
+      {jogadores.length > 0 && jogadoresFiltrados.length === 0 && (
+        <Text style={styles.nenhumJogador}>Nenhum jogador encontrado.</Text>
+      )}
+
+      {/* =================================================
           CARDS
       ================================================= */}
 
-      {jogadores.map((jogador) => (
+      {jogadoresFiltrados.map((jogador) => (
         <View key={jogador.id} style={styles.cardJogador}>
           <View style={styles.infoJogador}>
             {/* CABEÇALHO */}
@@ -647,6 +807,7 @@ export default function Jogadores() {
               <View style={styles.identidadeJogador}>
                 <Text style={styles.nomeJogador}>
                   {jogador.goleiro ? "🧤 " : "⚽ "}
+
                   {jogador.nome}
                 </Text>
 
@@ -681,8 +842,8 @@ export default function Jogadores() {
             </View>
 
             {/* =================================================
-                ESTATÍSTICAS
-            ================================================= */}
+                  ESTATÍSTICAS
+              ================================================= */}
 
             <View style={styles.estatisticasContainer}>
               {/* GOLS */}

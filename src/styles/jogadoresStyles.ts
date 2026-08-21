@@ -156,6 +156,60 @@ export const styles = StyleSheet.create({
   },
 
   // =========================================================
+  // PESQUISA E FILTROS
+  // =========================================================
+
+  filtroContainer: {
+    backgroundColor: "#174F2D",
+    padding: 15,
+    borderRadius: 15,
+    marginBottom: 20,
+  },
+
+  inputBusca: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 10,
+    paddingHorizontal: 15,
+    paddingVertical: 13,
+    fontSize: 16,
+    color: "#222222",
+    marginBottom: 12,
+  },
+
+  filtroEstrelasScroll: {
+    marginBottom: 5,
+  },
+
+  filtroEstrelasContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+
+  botaoFiltro: {
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  botaoFiltroAtivo: {
+    backgroundColor: "#D4AF37",
+  },
+
+  filtroTexto: {
+    color: "#0B3D20",
+    fontSize: 14,
+    fontWeight: "bold",
+  },
+
+  filtroTextoAtivo: {
+    color: "#FFFFFF",
+  },
+
+  // =========================================================
   // LISTA
   // =========================================================
 
@@ -322,6 +376,11 @@ export const styles = StyleSheet.create({
   textoAcao: {
     fontSize: 20,
   },
+
+  // =========================================================
+  // EXPORTAR / IMPORTAR
+  // =========================================================
+
   botoesExportacao: {
     flexDirection: "row",
     gap: 10,
@@ -356,8 +415,34 @@ export const styles = StyleSheet.create({
     fontWeight: "bold",
   },
 
+  // =========================================================
+  // IMPORTAÇÃO
+  // =========================================================
+
   inputImportacao: {
     height: 180,
     textAlignVertical: "top",
+  },
+  // =========================================================
+  // PESQUISA E FILTROS
+  // =========================================================
+
+  labelFiltro: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "bold",
+    marginBottom: 10,
+  },
+
+  textoFiltro: {
+    color: "#0B3D20",
+    fontSize: 14,
+    fontWeight: "bold",
+  },
+
+  textoFiltroAtivo: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "bold",
   },
 });
